@@ -239,7 +239,7 @@ tbody td a:hover{text-decoration:underline;}
 var db, fbFns, auth;
 var page = 'home', season = null;
 var allBuja=[], allProd=[], allPkg=[], allIdpw=[];
-var hlRow=null, hlCol=null;
+var _hlId=null, hlCol=null;
 var editProdId=null, uploadedImg=null;
 var editRowId=null, editRowCol=null;
 var idpwUnlocked = false;
@@ -250,6 +250,13 @@ window.addEventListener('firebase-ready', function(){
   db = window._db; fbFns = window._fbFns; auth = window._auth;
   Promise.all([loadBuja(),loadProd(),loadPkg(),loadIdpw()]).then(function(){
     goPage('home');
+  }).catch(function(err){
+    document.getElementById('main').innerHTML=
+      '<div class="estate" style="color:var(--accent)">'
+      +'⚠ 데이터 로드 실패<br><span style="font-size:11px;color:var(--text3)">'+
+      (err.message||'네트워크 연결을 확인하세요')+'</span>'
+      +'<br><br><button class="btn primary" onclick="location.reload()">새로고침</button>'
+      +'</div>';
   });
 });
 
@@ -257,6 +264,12 @@ window.addEventListener('firebase-ready', function(){
 function getAll(col){
   return fbFns.getDocs(fbFns.collection(db,col)).then(function(s){
     return s.docs.map(function(d){return Object.assign({id:d.id},d.data());});
+  }).catch(function(err){
+    var msg=err.message||'';
+    if(msg.indexOf('permission')>=0||msg.indexOf('PERMISSION')>=0){
+      throw new Error('Firebase 보안 규칙 만료. Firebase 콘솔 → Firestore → 규칙에서 날짜를 연장해주세요.');
+    }
+    throw err;
   });
 }
 function addItem(col,data){return fbFns.addDoc(fbFns.collection(db,col),data).then(function(r){return r.id;});}
@@ -324,7 +337,17 @@ function renderHome(){
 // ── BUJA SEASONS ──
 function getSeasons(){
   var s={};
-  allBuja.forEach(function(i){var k=i.season||'미분류';s[k]=(s[k]||0)+1;});
+  allBuja.forEach(function(i){
+    if(i._placeholder||!i.name)return;
+    var k=i.season||'미분류';
+    s[k]=(s[k]||0)+1;
+  });
+  // 제품 없는 시즌도 표시 (placeholder만 있는 경우)
+  allBuja.forEach(function(i){
+    if(!i._placeholder)return;
+    var k=i.season||'미분류';
+    if(!(k in s))s[k]=0;
+  });
   return s;
 }
 function renderBujaSeasons(){
@@ -364,7 +387,7 @@ function renderBujaSeason(){
       var thumb=item.imageUrl
         ?'<img src="'+escH(item.imageUrl)+'" alt="'+escH(item.name)+'">'
         :'<span class="noimg">No Image</span>';
-      cards+='<div class="product-card" id="pc-'+item.id+'" onclick="selectProduct(\''+item.id+'\');" ondblclick="openDetail(\''+item.id+'\')">'
+      cards+='<div class="product-card" id="pc-'+item.id+'" onclick="selectProduct(\''+item.id+'\')">'
         +'<div class="pthumb">'+thumb+'</div>'
         +'<div class="pbar">'
           +'<div class="pnm">'+escH(item.name||'—')+'</div>'
@@ -535,8 +558,8 @@ function changePw(){
 
 // ── HIGHLIGHT ──
 function hlRow(id,col){
-  if(hlRow._prev){var p=document.getElementById('r-'+hlRow._prev);if(p)p.classList.remove('hl');}
-  hlRow._prev=id; hlCol=col;
+  if(_hlId){var p=document.getElementById('r-'+_hlId);if(p)p.classList.remove('hl');}
+  _hlId=id; hlCol=col;
   var el=document.getElementById('r-'+id);if(el)el.classList.add('hl');
 }
 
@@ -566,8 +589,9 @@ function confirmDelProduct(id){
   if(!confirm('이 제품을 삭제하시겠습니까?'))return;
   deleteItem('buja',id).then(function(){
     allBuja=allBuja.filter(function(i){return i.id!==id;});
+    selectedProductId=null;
     closeModal('detModal');render();toast('삭제되었습니다');
-  });
+  }).catch(function(err){toast('삭제 실패: '+(err.message||err));});
 }
 
 // ── ADD/EDIT PRODUCT ──
@@ -610,10 +634,12 @@ function handleImg(input){
       } else {throw new Error();}
     })
     .catch(function(){
-      var url=URL.createObjectURL(file);
-      uploadedImg=url;
-      document.getElementById('apImg').innerHTML='<img src="'+escH(url)+'" class="iprv" onclick="document.getElementById(\'apFile\').click()"/>';
-      toast('이미지 로드됨 (Cloudinary 프리셋 설정 필요)');
+      uploadedImg=null;
+      document.getElementById('apImg').innerHTML=
+        '<div class="iuz" onclick="document.getElementById(\'apFile\').click()">'
+        +'<span class="uzi">⚠</span><span>이미지 업로드 실패</span>'
+        +'<span style="font-size:10px;margin-top:4px">Cloudinary 프리셋 설정 필요</span></div>';
+      toast('이미지 업로드 실패 — Cloudinary 설정 필요',3500);
     });
 }
 function saveProduct(){
@@ -632,7 +658,9 @@ function saveProduct(){
   var p=editProdId
     ?updateItem('buja',editProdId,data).then(function(){allBuja=allBuja.map(function(i){return i.id===editProdId?Object.assign({id:editProdId},data):i;});})
     :addItem('buja',data).then(function(id){allBuja.push(Object.assign({id:id},data));});
-  p.then(function(){closeModal('apModal');render();toast(editProdId?'수정되었습니다':'추가되었습니다');});
+  var wasEditP=!!editProdId;
+  p.then(function(){closeModal('apModal');render();toast(wasEditP?'수정되었습니다':'추가되었습니다');})
+   .catch(function(err){toast('저장 실패: '+(err.message||err));});
 }
 
 // ── SEASON ──
@@ -659,11 +687,11 @@ function openAddRow(col){
   });
 }
 function openEditRow(col){
-  if(!hlRow._prev||hlCol!==col){toast('편집할 행을 먼저 클릭하세요');return;}
+  if(!_hlId||hlCol!==col){toast('편집할 행을 먼저 클릭하세요');return;}
   var arr=col==='production'?allProd:allPkg;
-  var row=arr.find(function(r){return r.id===hlRow._prev;});
+  var row=arr.find(function(r){return r.id===_hlId;});
   if(!row)return;
-  addRowCol=col;editRowId=hlRow._prev;
+  addRowCol=col;editRowId=_hlId;
   document.getElementById('rowModal-'+col).style.display='flex';
   document.getElementById('rw-name-'+col).value=row.name||'';
   document.getElementById('rw-contact-'+col).value=row.contact||'';
@@ -690,17 +718,19 @@ function saveRow(col){
         if(col==='production') allProd.push(Object.assign({id:id},data));
         else allPkg.push(Object.assign({id:id},data));
       });
-  p.then(function(){editRowId=null;closeModal('rowModal-'+col);render();toast(editRowId?'수정됨':'추가됨');});
+  var wasEdit=!!editRowId;
+  p.then(function(){editRowId=null;closeModal('rowModal-'+col);render();toast(wasEdit?'수정되었습니다':'추가되었습니다');}).catch(function(err){toast('저장 실패: '+(err.message||err));});
 }
 function deleteHl(col){
-  if(!hlRow._prev||hlCol!==col){toast('삭제할 행을 먼저 클릭하세요');return;}
+  if(!_hlId||hlCol!==col){toast('삭제할 행을 먼저 클릭하세요');return;}
   if(!confirm('이 행을 삭제하시겠습니까?'))return;
   var dbCol=col==='production'?'production':col==='package'?'package':'idpw';
-  deleteItem(dbCol,hlRow._prev).then(function(){
-    if(col==='production') allProd=allProd.filter(function(r){return r.id!==hlRow._prev;});
-    else if(col==='package') allPkg=allPkg.filter(function(r){return r.id!==hlRow._prev;});
-    else allIdpw=allIdpw.filter(function(r){return r.id!==hlRow._prev;});
-    hlRow._prev=null;render();toast('삭제되었습니다');
+  var delId=_hlId;
+  deleteItem(dbCol,delId).then(function(){
+    if(col==='production') allProd=allProd.filter(function(r){return r.id!==delId;});
+    else if(col==='package') allPkg=allPkg.filter(function(r){return r.id!==delId;});
+    else allIdpw=allIdpw.filter(function(r){return r.id!==delId;});
+    _hlId=null;render();toast('삭제되었습니다');
   });
 }
 
@@ -715,11 +745,16 @@ function deleteProductBtn(){
   confirmDelProduct(selectedProductId);
 }
 function selectProduct(id){
+  if(selectedProductId===id){
+    // 이미 선택된 카드 재클릭 → 상세 열기
+    openDetail(id);
+    return;
+  }
   selectedProductId=id;
-  // highlight selected card
   document.querySelectorAll('.product-card').forEach(function(c){c.classList.remove('selected-card');});
   var el=document.getElementById('pc-'+id);
   if(el)el.classList.add('selected-card');
+  toast('한 번 더 탭하면 상세보기',1500);
 }
 
 // ── ID/PW CRUD ──
@@ -733,9 +768,9 @@ function openAddIdpw(){
   });
 }
 function openEditIdpw(){
-  if(!hlRow._prev||hlCol!=='idpw'){toast('편집할 행을 먼저 클릭하세요');return;}
-  var row=allIdpw.find(function(r){return r.id===hlRow._prev;});if(!row)return;
-  editIdpwId=hlRow._prev;
+  if(!_hlId||hlCol!=='idpw'){toast('편집할 행을 먼저 클릭하세요');return;}
+  var row=allIdpw.find(function(r){return r.id===_hlId;});if(!row)return;
+  editIdpwId=_hlId;
   document.getElementById('idpwModal').style.display='flex';
   document.getElementById('ip-company').value=row.company||'';
   document.getElementById('ip-userid').value=row.userid||'';
@@ -753,7 +788,9 @@ function saveIdpw(){
   var p=editIdpwId
     ?updateItem('idpw',editIdpwId,data).then(function(){allIdpw=allIdpw.map(function(r){return r.id===editIdpwId?Object.assign({id:editIdpwId},data):r;});})
     :addItem('idpw',data).then(function(id){allIdpw.push(Object.assign({id:id},data));});
-  p.then(function(){closeModal('idpwModal');render();toast(editIdpwId?'수정되었습니다':'추가되었습니다');});
+  var wasEditI=!!editIdpwId;
+  p.then(function(){closeModal('idpwModal');render();toast(wasEditI?'수정되었습니다':'추가되었습니다');})
+   .catch(function(err){toast('저장 실패: '+(err.message||err));});
 }
 
 // ── EXCEL UPLOAD ──
@@ -767,64 +804,88 @@ function handleExcel(input,type){
   if(!window.XLSX){
     var s=document.createElement('script');
     s.src='https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js';
-    s.onload=function(){processExcel(file,type);};
+    s.onload=function(){processExcel(file,type,input);};
     s.onerror=function(){
       // fallback to jsdelivr
       var s2=document.createElement('script');
       s2.src='https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
-      s2.onload=function(){processExcel(file,type);};
+      s2.onload=function(){processExcel(file,type,input);};
       s2.onerror=function(){toast('라이브러리 로드 실패. 인터넷 연결을 확인해주세요.');};
       document.head.appendChild(s2);
     };
     document.head.appendChild(s);
-  } else {processExcel(file,type);}
+  } else {processExcel(file,type,input);}
 }
-function processExcel(file,type){
+function processExcel(file,type,input){
   var reader=new FileReader();
   reader.onload=function(e){
     var wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
     var promises=[];
     var added=0;
 
+    // 시트 데이터를 헤더 자동탐지해서 JSON으로 변환
+    function sheetToJson(ws){
+      // 전체 raw 배열로 읽고 첫번째 비어있지 않은 행을 헤더로 사용
+      var raw=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      if(!raw||!raw.length) return [];
+      // 헤더 행 찾기 (첫 셀이 비어있지 않은 행)
+      var hIdx=0;
+      for(var i=0;i<raw.length;i++){
+        if(raw[i][0]&&String(raw[i][0]).trim()) { hIdx=i; break; }
+      }
+      var headers=raw[hIdx].map(function(h){return String(h||'').trim();});
+      var result=[];
+      for(var r=hIdx+1;r<raw.length;r++){
+        var row=raw[r];
+        // 완전 빈 행 스킵
+        if(!row.some(function(v){return v!=='';})) continue;
+        var obj={};
+        headers.forEach(function(h,ci){ obj[h]=String(row[ci]||'').trim(); });
+        result.push(obj);
+      }
+      return result;
+    }
+
     if(type==='buja'||type==='buja-season'){
-      // 시트명 = 시즌명, 모든 시트 읽기
       var existing={}; allBuja.forEach(function(i){existing[i.season]=true;});
       wb.SheetNames.forEach(function(sheetName){
-        if(existing[sheetName])return; // 이미 있는 시즌 스킵
-        var rows=XLSX.utils.sheet_to_json(wb.Sheets[sheetName]);
+        if(existing[sheetName])return;
+        var rows=sheetToJson(wb.Sheets[sheetName]);
         rows.forEach(function(row){
           if(!row['제품명'])return;
           var item={season:sheetName,name:row['제품명']||'',alias:row['별칭']||'',
             seller:row['판매처']||'',sellerInfo:row['판매처정보']||'',
-            price:String(row['가격']||''),orderUnit:row['주문단위']||'',note:row['비고']||'',imageUrl:''};
+            price:row['가격']||'',orderUnit:row['주문단위']||'',note:row['비고']||'',imageUrl:''};
           promises.push(addItem('buja',item).then(function(id){allBuja.push(Object.assign({id:id},item));added++;}));
         });
       });
 
     } else if(type==='idpw'){
-      // 모든 시트 읽기 — 업체명 기준 중복 방지
       var existN={}; allIdpw.forEach(function(r){existN[r.company]=true;});
       wb.SheetNames.forEach(function(sheetName){
-        var rows=XLSX.utils.sheet_to_json(wb.Sheets[sheetName]);
+        var rows=sheetToJson(wb.Sheets[sheetName]);
         rows.forEach(function(row){
           var c=row['업체명']||'';if(!c||existN[c])return;
-          existN[c]=true; // 같은 업로드 내 중복도 방지
+          existN[c]=true;
           var item={company:c,userid:row['ID']||'',password:row['PW']||'',url:row['사이트주소']||''};
           promises.push(addItem('idpw',item).then(function(id){allIdpw.push(Object.assign({id:id},item));added++;}));
         });
       });
 
     } else {
-      // 생산 / 패키지 — 모든 시트 읽기, 거래처명 기준 중복 방지
       var dbCol=type==='production'?'production':'package';
       var arr=type==='production'?allProd:allPkg;
       var existN2={}; arr.forEach(function(r){existN2[r.name]=true;});
       wb.SheetNames.forEach(function(sheetName){
-        var rows=XLSX.utils.sheet_to_json(wb.Sheets[sheetName]);
+        var rows=sheetToJson(wb.Sheets[sheetName]);
         rows.forEach(function(row){
-          var n=row['거래처명']||'';if(!n||existN2[n])return;
-          existN2[n]=true; // 같은 업로드 내 중복도 방지
-          var item={name:n,contact:row['연락처']||'',address:row['주소']||'',products:row['사용제품']||'',note:row['비고']||''};
+          var n=row['거래처명']||'';
+          // 카테고리 구분행 스킵 (예: [ 후가공 ])
+          if(!n||n.startsWith('['))return;
+          if(existN2[n])return;
+          existN2[n]=true;
+          var item={name:n,contact:row['연락처']||'',address:row['주소']||'',
+            products:row['사용제품']||'',note:row['비고']||''};
           promises.push(addItem(dbCol,item).then(function(id){
             if(type==='production')allProd.push(Object.assign({id:id},item));
             else allPkg.push(Object.assign({id:id},item));
@@ -834,8 +895,16 @@ function processExcel(file,type){
       });
     }
 
-    Promise.all(promises).then(function(){render();toast(added+'개 추가됨');});
+    Promise.all(promises).then(function(){
+      render();
+      toast(added+'개 추가됨');
+      // file input 초기화 (같은 파일 재업로드 가능하게)
+      try{ if(input && input.value!==undefined) input.value=''; }catch(e){}
+    }).catch(function(err){
+      toast('업로드 실패: '+(err.message||err));
+    });
   };
+  reader.onerror=function(){toast('파일 읽기 실패');};
   reader.readAsArrayBuffer(file);
 }
 
