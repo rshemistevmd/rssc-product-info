@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0"/>
+<title>RSSC PRODUCT INFO</title>
+<script type="module">
+import{initializeApp}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import{getFirestore,collection,getDocs,addDoc,updateDoc,deleteDoc,doc,query,where}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import{getAuth,signInWithEmailAndPassword,sendPasswordResetEmail}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+const cfg={apiKey:"AIzaSyAd1COiqENQOmttc-9uOqeefurmByRzXmg",authDomain:"rssc-product-info.firebaseapp.com",projectId:"rssc-product-info",storageBucket:"rssc-product-info.firebasestorage.app",messagingSenderId:"355512054973",appId:"1:355512054973:web:4a7598a62ad8771b4bf3d4"};
+const app=initializeApp(cfg);
+window._db=getFirestore(app);
+window._auth=getAuth(app);
+window._fbFns={collection,getDocs,addDoc,updateDoc,deleteDoc,doc,query,where,signInWithEmailAndPassword,sendPasswordResetEmail};
+window.dispatchEvent(new Event('firebase-ready'));
+</script>
+<style>
+/* Helvetica system font stack */
+:root{
+  --bg:#f2f0eb;--bg2:#ffffff;--bg3:#e8e6e1;--border:#d0cdc7;
+  --accent:#cc0000;--text:#111111;--text2:#555550;--text3:#999990;
+  --bar-bg:#111111;--bar-text:#f2f0eb;--highlight:rgba(204,0,0,0.06);
+  --font:'Helvetica Neue',Helvetica,Arial,sans-serif;--cond:'Helvetica Neue',Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:72px;-webkit-font-smoothing:antialiased;}
+
+/* NAV */
+#topnav{position:fixed;top:0;left:0;right:0;height:52px;background:var(--bg);border-bottom:1.5px solid var(--text);display:flex;align-items:center;padding:0 20px;z-index:100;}
+.logo{font-family:var(--font);font-size:15px;font-weight:700;letter-spacing:0.12em;color:var(--text);flex:1;text-transform:uppercase;}
+.logo span{color:var(--accent);}
+.nav-links{display:flex;align-items:center;}
+.nav-btn{background:none;border:none;border-left:1px solid var(--border);color:var(--text2);font-family:var(--cond);font-size:13px;font-weight:600;letter-spacing:0.06em;cursor:pointer;padding:0 14px;height:52px;text-transform:uppercase;transition:color .12s,background .12s;display:flex;align-items:center;gap:5px;white-space:nowrap;}
+.nav-btn:hover{color:var(--accent);background:rgba(204,0,0,0.04);}
+.nav-btn.active{color:var(--accent);border-bottom:2.5px solid var(--accent);}
+#menuToggle{display:none;background:none;border:none;cursor:pointer;flex-direction:column;gap:5px;padding:4px;}
+#menuToggle span{display:block;width:22px;height:2px;background:var(--text);}
+#mobileMenu{display:none;position:fixed;top:52px;left:0;right:0;background:var(--bg);border-bottom:1.5px solid var(--text);z-index:99;}
+#mobileMenu.open{display:block;}
+.mni{display:flex;align-items:center;gap:12px;padding:18px 20px;border-bottom:1px solid var(--border);cursor:pointer;font-family:var(--cond);font-size:20px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--text);transition:color .12s;}
+.mni:hover{color:var(--accent);}
+.mni-n{font-size:11px;color:var(--text3);font-weight:400;min-width:20px;}
+
+/* SEARCH BAR */
+#searchbar{position:fixed;bottom:0;left:0;right:0;height:60px;background:var(--bar-bg);border-top:1.5px solid var(--text);display:flex;align-items:center;padding:0 16px;gap:10px;z-index:100;}
+.slabel{font-family:var(--cond);font-size:11px;font-weight:700;letter-spacing:0.15em;color:#666;text-transform:uppercase;white-space:nowrap;}
+#searchInput{flex:1;background:transparent;border:none;border-bottom:1px solid #444;color:var(--bar-text);font-family:var(--font);font-size:15px;font-weight:300;padding:6px 0;outline:none;min-width:0;}
+#searchInput:focus{border-bottom-color:var(--accent);}
+#searchInput::placeholder{color:#555;}
+.sbtn{background:var(--accent);color:#fff;border:none;font-family:var(--cond);font-size:12px;font-weight:700;letter-spacing:0.1em;padding:9px 18px;cursor:pointer;text-transform:uppercase;white-space:nowrap;flex-shrink:0;}
+.sbtn:hover{opacity:.85;}
+
+/* MAIN */
+#main{padding-top:52px;min-height:calc(100vh - 60px);}
+
+/* HOME */
+.home-hero{padding:48px 20px 32px;border-bottom:1px solid var(--border);}
+.home-hero h1{font-family:var(--cond);font-size:clamp(36px,10vw,80px);font-weight:700;letter-spacing:-0.01em;line-height:.95;text-transform:uppercase;}
+.home-hero h1 em{font-style:italic;font-weight:300;color:var(--text2);}
+.home-hero h1 .red{color:var(--accent);}
+.home-sub{margin-top:16px;font-size:13px;color:var(--text3);letter-spacing:0.08em;text-transform:uppercase;font-weight:500;}
+.home-menu-item{display:flex;align-items:center;padding:0 20px;height:80px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s;gap:16px;}
+.home-menu-item:hover{background:var(--bg2);}
+.home-menu-item:hover .hma{color:var(--accent);transform:translateX(4px);}
+.hmn{font-family:var(--cond);font-size:11px;color:var(--text3);min-width:24px;font-weight:500;}
+.hmi{font-size:20px;}
+.hml{flex:1;font-family:var(--cond);font-size:28px;font-weight:700;letter-spacing:0.02em;text-transform:uppercase;}
+.hma{font-size:18px;color:var(--text3);transition:all .2s;}
+
+/* PAGE HEADER */
+.ph{padding:24px 20px 20px;border-bottom:1.5px solid var(--text);display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+.ph-l{}
+.ptag{font-family:var(--cond);font-size:10px;font-weight:700;letter-spacing:0.15em;color:var(--accent);text-transform:uppercase;margin-bottom:4px;}
+.ptitle{font-family:var(--cond);font-size:clamp(22px,6vw,36px);font-weight:700;letter-spacing:-0.01em;text-transform:uppercase;line-height:1;}
+.bc{font-size:12px;color:var(--text3);display:flex;align-items:center;gap:6px;font-family:var(--cond);letter-spacing:0.04em;text-transform:uppercase;margin-top:6px;}
+.bc .cr{cursor:pointer;transition:color .12s;}
+.bc .cr:hover{color:var(--accent);}
+.ph-r{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+
+/* BUTTONS */
+.btn{background:transparent;border:1.5px solid var(--border);color:var(--text2);font-family:var(--cond);font-size:12px;font-weight:700;letter-spacing:0.08em;padding:8px 14px;cursor:pointer;text-transform:uppercase;transition:all .12s;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;}
+.btn:hover{border-color:var(--text);color:var(--text);}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;}
+.btn.primary:hover{opacity:.85;}
+.btn.danger{color:var(--accent);border-color:rgba(204,0,0,.3);}
+.btn.danger:hover{border-color:var(--accent);background:rgba(204,0,0,.05);}
+
+/* SEASON LIST */
+.season-item{display:flex;align-items:center;padding:0 20px;height:68px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s;gap:16px;}
+.season-item:hover{background:var(--bg2);}
+.season-item:hover .sia{color:var(--accent);transform:translateX(3px);}
+.sin{font-family:var(--cond);font-size:11px;color:var(--text3);min-width:24px;}
+.sinm{flex:1;font-family:var(--cond);font-size:20px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;}
+.sict{font-size:12px;color:var(--text3);font-family:var(--cond);letter-spacing:0.04em;}
+.sia{color:var(--text3);font-size:16px;transition:all .2s;}
+
+/* PRODUCT GRID */
+.product-grid{display:grid;grid-template-columns:1fr 1fr;}
+.product-card{border-right:1px solid var(--border);border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s;overflow:hidden;}
+.product-card:nth-child(even){border-right:none;}
+.product-card:hover{background:var(--bg2);}
+.product-card.selected-card{outline:2.5px solid var(--accent);background:var(--bg2);}
+
+.pthumb{width:100%;aspect-ratio:1;background:var(--bg3);display:flex;align-items:center;justify-content:center;overflow:hidden;}
+.pthumb img{width:100%;height:100%;object-fit:cover;transition:transform .3s;}
+.product-card:hover .pthumb img{transform:scale(1.03);}
+.noimg{font-family:var(--cond);font-size:11px;color:var(--text3);letter-spacing:0.08em;text-transform:uppercase;}
+.pbar{padding:12px 14px;border-top:1px solid var(--border);}
+.pbar .pnm{font-family:var(--cond);font-size:14px;font-weight:600;letter-spacing:0.03em;text-transform:uppercase;line-height:1.2;}
+.pbar .pals{font-size:11px;color:var(--text3);margin-top:3px;font-family:var(--cond);letter-spacing:0.04em;}
+
+/* TABLE */
+.twrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:480px;}
+thead th{background:var(--bg);color:var(--text3);font-family:var(--cond);font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;padding:12px 16px;text-align:left;border-bottom:1.5px solid var(--text);white-space:nowrap;}
+tbody tr{border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s;}
+tbody tr:hover{background:var(--bg2);}
+tbody tr.hl{background:var(--highlight);border-left:3px solid var(--accent);}
+tbody td{padding:13px 16px;color:var(--text);vertical-align:top;line-height:1.5;}
+tbody td a{color:var(--accent);text-decoration:none;font-weight:600;}
+tbody td a:hover{text-decoration:underline;}
+
+/* UPLOAD */
+.upsec{padding:16px 20px;background:var(--bg2);border-bottom:1px solid var(--border);display:none;}
+.upsec.open{display:block;}
+.upsec h4{font-family:var(--cond);font-size:10px;font-weight:700;letter-spacing:0.15em;color:var(--text3);text-transform:uppercase;margin-bottom:10px;}
+.uprow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+.uprow input[type=file]{background:var(--bg);border:1.5px dashed var(--border);color:var(--text);font-family:var(--font);font-size:12px;padding:8px 12px;cursor:pointer;flex:1;min-width:0;}
+.upnote{font-size:11px;color:var(--text3);margin-top:8px;line-height:1.6;font-family:var(--cond);letter-spacing:0.03em;}
+
+/* MODAL */
+.overlay{position:fixed;inset:0;background:rgba(17,17,17,.65);z-index:200;display:flex;align-items:flex-end;justify-content:center;}
+@media(min-width:600px){.overlay{align-items:center;padding:24px;}}
+.modal{background:var(--bg2);border:1.5px solid var(--text);width:100%;max-width:500px;max-height:90vh;overflow-y:auto;animation:slideUp .2s ease;}
+@keyframes slideUp{from{transform:translateY(20px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+.mhd{padding:18px 20px;border-bottom:1.5px solid var(--text);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--bg2);z-index:1;}
+.mhd h3{font-family:var(--cond);font-size:16px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;}
+.mcls{background:none;border:1px solid var(--border);color:var(--text2);font-size:12px;cursor:pointer;padding:5px 10px;font-family:var(--cond);font-weight:700;letter-spacing:0.06em;text-transform:uppercase;}
+.mcls:hover{border-color:var(--text);color:var(--text);}
+.mbdy{padding:20px;}
+.mthumb{width:100%;aspect-ratio:4/3;background:var(--bg3);border:1px solid var(--border);margin-bottom:20px;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+.mthumb img{width:100%;height:100%;object-fit:cover;}
+.mthumb .noi{font-family:var(--cond);font-size:11px;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase;}
+.dr{display:flex;padding:13px 0;border-bottom:1px solid var(--border);gap:16px;}
+.dr:last-of-type{border-bottom:none;}
+.dlb{font-family:var(--cond);font-size:10px;font-weight:700;letter-spacing:0.12em;color:var(--text3);text-transform:uppercase;min-width:76px;padding-top:1px;}
+.dvl{font-size:13px;color:var(--text);flex:1;line-height:1.5;}
+.fa{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;padding-top:16px;border-top:1px solid var(--border);}
+.fg{margin-bottom:14px;}
+.fg label{display:block;font-family:var(--cond);font-size:10px;font-weight:700;letter-spacing:0.12em;color:var(--text3);text-transform:uppercase;margin-bottom:6px;}
+.fg input,.fg textarea,.fg select{width:100%;background:var(--bg);border:none;border-bottom:1.5px solid var(--border);color:var(--text);font-family:var(--font);font-size:14px;padding:8px 0;outline:none;transition:border-color .15s;resize:vertical;border-radius:0;}
+.fg input:focus,.fg textarea:focus{border-bottom-color:var(--accent);}
+.iuz{width:100%;aspect-ratio:16/9;border:2px dashed var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;gap:8px;color:var(--text3);font-family:var(--cond);font-size:12px;letter-spacing:0.08em;text-transform:uppercase;background:var(--bg);margin-bottom:16px;}
+.iuz:hover{border-color:var(--accent);}
+.iuz .uzi{font-size:22px;}
+.iprv{width:100%;aspect-ratio:16/9;object-fit:cover;cursor:pointer;margin-bottom:16px;border:1px solid var(--border);}
+
+/* SEARCH POPUP */
+.spopup{position:fixed;bottom:68px;left:50%;transform:translateX(-50%);width:min(96vw,500px);background:var(--bg2);border:1.5px solid var(--text);z-index:150;box-shadow:0 -4px 24px rgba(0,0,0,.15);max-height:60vh;overflow-y:auto;}
+.sphdr{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;font-family:var(--cond);font-size:10px;font-weight:700;letter-spacing:0.15em;color:var(--text3);text-transform:uppercase;position:sticky;top:0;background:var(--bg2);}
+.sphdr button{background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;}
+.sri{padding:14px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s;}
+.sri:last-child{border-bottom:none;}
+.sri:hover{background:var(--bg3);}
+.srt{font-family:var(--cond);font-size:9px;font-weight:700;letter-spacing:0.14em;color:var(--accent);text-transform:uppercase;margin-bottom:3px;}
+.srn{font-family:var(--cond);font-size:16px;font-weight:600;}
+.srs{font-size:11px;color:var(--text3);margin-top:2px;}
+
+/* TOAST */
+.toast{position:fixed;top:64px;left:50%;transform:translateX(-50%);background:var(--text);color:var(--bg);font-family:var(--cond);font-size:13px;font-weight:600;letter-spacing:0.06em;padding:10px 24px;z-index:300;white-space:nowrap;animation:tIn .2s ease;}
+@keyframes tIn{from{opacity:0;transform:translateX(-50%) translateY(-6px);}to{opacity:1;transform:translateX(-50%) translateY(0);}}
+
+/* LOADING / EMPTY */
+.loading,.estate{padding:60px 20px;text-align:center;font-family:var(--cond);font-size:13px;letter-spacing:0.08em;color:var(--text3);text-transform:uppercase;}
+.spin{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:sp .7s linear infinite;margin:0 auto 12px;}
+@keyframes sp{to{transform:rotate(360deg);}}
+
+/* LOGIN PAGE */
+.login-wrap{min-height:calc(100vh - 112px);display:flex;align-items:center;justify-content:center;padding:20px;}
+.login-box{width:100%;max-width:360px;}
+.login-box h2{font-family:var(--cond);font-size:32px;font-weight:700;letter-spacing:-0.01em;text-transform:uppercase;margin-bottom:6px;}
+.login-box p{font-size:13px;color:var(--text3);margin-bottom:32px;letter-spacing:0.04em;}
+.login-box .fg{margin-bottom:20px;}
+.login-box .fg input{font-size:16px;padding:10px 0;}
+.login-err{color:var(--accent);font-size:12px;font-family:var(--cond);letter-spacing:0.06em;margin-top:-8px;margin-bottom:16px;}
+.login-pw-link{font-size:12px;color:var(--text3);font-family:var(--cond);letter-spacing:0.06em;text-decoration:underline;cursor:pointer;margin-top:12px;display:inline-block;}
+.login-pw-link:hover{color:var(--accent);}
+
+@media(max-width:600px){
+  .nav-links{display:none;}
+  #menuToggle{display:flex;}
+  .ph{padding:18px 16px 14px;}
+  .home-hero{padding:32px 16px 24px;}
+  .home-menu-item{height:68px;}
+  .hml{font-size:22px;}
+  .season-item{height:60px;}
+  .sinm{font-size:17px;}
+  tbody td{padding:11px 12px;}
+  thead th{padding:10px 12px;}
+}
+</style>
+</head>
+<body>
+<nav id="topnav">
+  <div class="logo">RSSC <span>—</span> Product Info</div>
+  <div class="nav-links">
+    <button class="nav-btn" id="nH" onclick="goPage('home')">홈</button>
+    <button class="nav-btn" id="nB" onclick="goPage('buja')">⛓️ 부자재</button>
+    <button class="nav-btn" id="nP" onclick="goPage('prod')">🏭 생산</button>
+    <button class="nav-btn" id="nK" onclick="goPage('pkg')">📦 패키지</button>
+    <button class="nav-btn" id="nI" onclick="goPage('idpw')">🔑 ID/PW</button>
+  </div>
+  <button id="menuToggle" onclick="toggleMenu()" aria-label="메뉴">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+<div id="mobileMenu">
+  <div class="mni" onclick="goPage('home');closeMenu()"><span class="mni-n">00</span>홈</div>
+  <div class="mni" onclick="goPage('buja');closeMenu()"><span class="mni-n">01</span>⛓️ 부자재</div>
+  <div class="mni" onclick="goPage('prod');closeMenu()"><span class="mni-n">02</span>🏭 생산</div>
+  <div class="mni" onclick="goPage('pkg');closeMenu()"><span class="mni-n">03</span>📦 패키지</div>
+  <div class="mni" onclick="goPage('idpw');closeMenu()"><span class="mni-n">04</span>🔑 ID/PW</div>
+</div>
+<div id="main"><div class="loading"><div class="spin"></div>로딩 중...</div></div>
+<div id="searchbar">
+  <span class="slabel">Search</span>
+  <input type="text" id="searchInput" placeholder="제품명, 거래처명..." onkeydown="if(event.key==='Enter')doSearch()"/>
+  <button class="sbtn" onclick="doSearch()">검색</button>
+</div>
+<div id="spopup" class="spopup" style="display:none"></div>
+<div id="toast" class="toast" style="display:none"></div>
+
+<script>
+'use strict';
+// ── STATE ──
+var db, fbFns, auth;
+var page = 'home', season = null;
+var allBuja=[], allProd=[], allPkg=[], allIdpw=[];
+var hlRow=null, hlCol=null;
+var editProdId=null, uploadedImg=null;
+var editRowId=null, editRowCol=null;
+var idpwUnlocked = false;
+var IDPW_PASS = '101700';
+var CLD = {cloud:'dgeaj6y5g', preset:'rssc_unsigned'};
+
+window.addEventListener('firebase-ready', function(){
+  db = window._db; fbFns = window._fbFns; auth = window._auth;
+  Promise.all([loadBuja(),loadProd(),loadPkg(),loadIdpw()]).then(function(){
+    goPage('home');
+  });
+});
+
+// ── FIREBASE ──
+function getAll(col){
+  return fbFns.getDocs(fbFns.collection(db,col)).then(function(s){
+    return s.docs.map(function(d){return Object.assign({id:d.id},d.data());});
+  });
+}
+function addItem(col,data){return fbFns.addDoc(fbFns.collection(db,col),data).then(function(r){return r.id;});}
+function updateItem(col,id,data){return fbFns.updateDoc(fbFns.doc(db,col,id),data);}
+function deleteItem(col,id){return fbFns.deleteDoc(fbFns.doc(db,col,id));}
+function loadBuja(){return getAll('buja').then(function(d){allBuja=d;});}
+function loadProd(){return getAll('production').then(function(d){allProd=d;});}
+function loadPkg(){return getAll('package').then(function(d){allPkg=d;});}
+function loadIdpw(){return getAll('idpw').then(function(d){allIdpw=d;});}
+
+// ── NAV ──
+function goPage(p, s){
+  page=p;
+  if(s!==undefined) season=s;
+  ['nH','nB','nP','nK','nI'].forEach(function(id){
+    var el=document.getElementById(id);
+    if(el) el.classList.remove('active');
+  });
+  var m={home:'nH',buja:'nB','buja-season':'nB',prod:'nP',pkg:'nK',idpw:'nI'};
+  if(m[p]){var el=document.getElementById(m[p]);if(el)el.classList.add('active');}
+  closePopup();
+  render();
+}
+function toggleMenu(){document.getElementById('mobileMenu').classList.toggle('open');}
+function closeMenu(){document.getElementById('mobileMenu').classList.remove('open');}
+
+// ── RENDER ──
+function render(){
+  var m=document.getElementById('main');
+  if(page==='home') m.innerHTML=renderHome();
+  else if(page==='buja') m.innerHTML=renderBujaSeasons();
+  else if(page==='buja-season') m.innerHTML=renderBujaSeason();
+  else if(page==='prod') m.innerHTML=renderTable('production');
+  else if(page==='pkg') m.innerHTML=renderTable('package');
+  else if(page==='idpw') m.innerHTML=renderIdpw();
+}
+
+// ── HOME ──
+function renderHome(){
+  return '<div>'
+    +'<div class="home-hero">'
+      +'<div class="ptag">RSSC — Product Info System</div>'
+      +'<h1>PRODUCT<br><em>info</em></h1>'
+      +'<div class="home-sub">제품별 부자재 및 거래처 정보</div>'
+    +'</div>'
+    +'<div class="home-menu-item" onclick="goPage(\'buja\')">'
+      +'<span class="hmn">01</span><span class="hmi">⛓️</span>'
+      +'<span class="hml">부자재</span><span class="hma">→</span>'
+    +'</div>'
+    +'<div class="home-menu-item" onclick="goPage(\'prod\')">'
+      +'<span class="hmn">02</span><span class="hmi">🏭</span>'
+      +'<span class="hml">생산</span><span class="hma">→</span>'
+    +'</div>'
+    +'<div class="home-menu-item" onclick="goPage(\'pkg\')">'
+      +'<span class="hmn">03</span><span class="hmi">📦</span>'
+      +'<span class="hml">패키지</span><span class="hma">→</span>'
+    +'</div>'
+    +'<div class="home-menu-item" onclick="goPage(\'idpw\')">'
+      +'<span class="hmn">04</span><span class="hmi">🔑</span>'
+      +'<span class="hml">ID / PW</span><span class="hma">→</span>'
+    +'</div>'
+  +'</div>';
+}
+
+// ── BUJA SEASONS ──
+function getSeasons(){
+  var s={};
+  allBuja.forEach(function(i){var k=i.season||'미분류';s[k]=(s[k]||0)+1;});
+  return s;
+}
+function renderBujaSeasons(){
+  var seasons=getSeasons(), keys=Object.keys(seasons);
+  var items='';
+  keys.forEach(function(s,i){
+    var num=i<9?'0'+(i+1):''+(i+1);
+    items+='<div class="season-item" onclick="goPage(\'buja-season\',\''+escH(s)+'\')">'
+      +'<span class="sin">'+num+'</span>'
+      +'<span class="sinm">'+escH(s)+'</span>'
+      +'<span class="sict">'+seasons[s]+'개</span>'
+      +'<span class="sia">→</span>'
+    +'</div>';
+  });
+  if(!items) items='<div class="estate">등록된 시즌이 없습니다</div>';
+  return '<div class="ph">'
+      +'<div class="ph-l"><div class="ptag">부자재</div><div class="ptitle">⛓️ 시즌 목록</div></div>'
+      +'<div class="ph-r">'
+        +'<button class="btn primary" onclick="openAddSeasonModal()">+ 시즌 추가</button>'
+        +'<button class="btn" onclick="toggleUp(\'buja\')">⬆ 엑셀</button>'
+      +'</div></div>'
+    +'<div class="upsec" id="up-buja">'
+      +'<h4>Excel Upload — 새 시즌만 추가됩니다</h4>'
+      +'<div class="uprow"><input type="file" accept=".xlsx,.xls" onchange="handleExcel(this,\'buja\')"/></div>'
+      +'<div class="upnote">시트명 = 시즌명 | 컬럼: 제품명 / 별칭 / 판매처 / 판매처정보 / 가격 / 주문단위 / 비고</div>'
+    +'</div>'
+    +'<div>'+items+'</div>'
+    +modalAddSeason();
+}
+
+// ── BUJA SEASON (product grid) ──
+function renderBujaSeason(){
+  var items=allBuja.filter(function(i){return (i.season||'미분류')===season&&!i._placeholder;});
+  var cards='';
+  if(items.length){
+    items.forEach(function(item){
+      var thumb=item.imageUrl
+        ?'<img src="'+escH(item.imageUrl)+'" alt="'+escH(item.name)+'">'
+        :'<span class="noimg">No Image</span>';
+      cards+='<div class="product-card" id="pc-'+item.id+'" onclick="selectProduct(\''+item.id+'\');" ondblclick="openDetail(\''+item.id+'\')">'
+        +'<div class="pthumb">'+thumb+'</div>'
+        +'<div class="pbar">'
+          +'<div class="pnm">'+escH(item.name||'—')+'</div>'
+          +'<div class="pals">'+escH(item.alias||'')+'</div>'
+        +'</div>'
+      +'</div>';
+    });
+  } else {
+    cards='<div class="estate" style="grid-column:1/-1">등록된 제품이 없습니다</div>';
+  }
+  return '<div class="ph">'
+      +'<div class="ph-l">'
+        +'<div class="bc"><span class="cr" onclick="goPage(\'buja\')">부자재</span><span>›</span><span>'+escH(season)+'</span></div>'
+        +'<div class="ptitle">'+escH(season)+'</div>'
+      +'</div>'
+      +'<div class="ph-r">'
+        +'<button class="btn" onclick="openEditProductBtn()">✏ 편집</button>'
+        +'<button class="btn danger" onclick="deleteProductBtn()">삭제</button>'
+        +'<button class="btn primary" onclick="openAddProduct()">+ 제품</button>'
+        +'<button class="btn" onclick="toggleUp(\'bs\')">⬆ 엑셀</button>'
+      +'</div></div>'
+    +'<div class="upsec" id="up-bs">'
+      +'<h4>Excel Upload — 새 제품만 추가됩니다</h4>'
+      +'<div class="uprow"><input type="file" accept=".xlsx,.xls" onchange="handleExcel(this,\'buja-season\')"/></div>'
+      +'<div class="upnote">시트명 = 시즌명 | 컬럼: 제품명 / 별칭 / 판매처 / 판매처정보 / 가격 / 주문단위 / 비고</div>'
+    +'</div>'
+    +'<div class="product-grid">'+cards+'</div>'
+    +modalDetail()
+    +modalAddProduct();
+}
+
+// ── TABLE ──
+function renderTable(colName){
+  var data=colName==='production'?allProd:allPkg;
+  var label=colName==='production'?'🏭 생산':'📦 패키지';
+  var tag=colName==='production'?'생산':'패키지';
+  var cols=['거래처명','연락처','주소','사용제품','비고'];
+  var keys=['name','contact','address','products','note'];
+  var ths=''; cols.forEach(function(c){ths+='<th>'+c+'</th>';});
+  var trs='';
+  if(data.length){
+    data.forEach(function(row){
+      var tds=''; keys.forEach(function(k){tds+='<td>'+escH(row[k]||'')+'</td>';});
+      trs+='<tr id="r-'+row.id+'" onclick="hlRow(\''+row.id+'\',\''+colName+'\')">'+tds+'</tr>';
+    });
+  } else {
+    trs='<tr><td colspan="5" class="estate">등록된 거래처가 없습니다</td></tr>';
+  }
+  return '<div class="ph">'
+      +'<div class="ph-l"><div class="ptag">'+tag+'</div><div class="ptitle">'+label+' 거래처</div></div>'
+      +'<div class="ph-r">'
+        +'<button class="btn primary" onclick="openAddRow(\''+colName+'\')">+ 추가</button>'
+        +'<button class="btn" onclick="openEditRow(\''+colName+'\')">✏ 편집</button>'
+        +'<button class="btn danger" onclick="deleteHl(\''+colName+'\')">삭제</button>'
+        +'<button class="btn" onclick="toggleUp(\''+colName+'\')">⬆ 엑셀</button>'
+      +'</div></div>'
+    +'<div class="upsec" id="up-'+colName+'">'
+      +'<h4>Excel Upload — 새 거래처만 추가됩니다</h4>'
+      +'<div class="uprow"><input type="file" accept=".xlsx,.xls" onchange="handleExcel(this,\''+colName+'\')"/></div>'
+      +'<div class="upnote">컬럼: 거래처명 / 연락처 / 주소 / 사용제품 / 비고</div>'
+    +'</div>'
+    +'<div class="twrap"><table><thead><tr>'+ths+'</tr></thead><tbody>'+trs+'</tbody></table></div>'
+    +modalAddRow(colName);
+}
+
+// ── ID/PW PAGE ──
+function renderIdpw(){
+  if(!idpwUnlocked) return renderLogin();
+  var cols=['업체명','ID','PW','사이트 주소'];
+  var keys=['company','userid','password','url'];
+  var ths=''; cols.forEach(function(c){ths+='<th>'+c+'</th>';});
+  var trs='';
+  if(allIdpw.length){
+    allIdpw.forEach(function(row){
+      var tds='';
+      keys.forEach(function(k){
+        if(k==='url'&&row[k]){
+          tds+='<td><a href="'+escH(row[k])+'" target="_blank" rel="noopener">'+escH(row[k])+'</a></td>';
+        } else {
+          tds+='<td>'+escH(row[k]||'')+'</td>';
+        }
+      });
+      trs+='<tr id="r-'+row.id+'" onclick="hlRow(\''+row.id+'\',\'idpw\')">'+tds+'</tr>';
+    });
+  } else {
+    trs='<tr><td colspan="4" class="estate">등록된 항목이 없습니다</td></tr>';
+  }
+  return '<div class="ph">'
+      +'<div class="ph-l"><div class="ptag">ID/PW</div><div class="ptitle">🔑 계정 관리</div></div>'
+      +'<div class="ph-r">'
+        +'<button class="btn primary" onclick="openAddIdpw()">+ 추가</button>'
+        +'<button class="btn" onclick="openEditIdpw()">✏ 편집</button>'
+        +'<button class="btn danger" onclick="deleteHl(\'idpw\')">삭제</button>'
+        +'<button class="btn" onclick="toggleUp(\'idpw\')">⬆ 엑셀</button>'
+        +'<button class="btn" onclick="idpwUnlocked=false;render()">🔒 잠금</button>'
+      +'</div></div>'
+    +'<div class="upsec" id="up-idpw">'
+      +'<h4>Excel Upload — 새 항목만 추가됩니다</h4>'
+      +'<div class="uprow"><input type="file" accept=".xlsx,.xls" onchange="handleExcel(this,\'idpw\')"/></div>'
+      +'<div class="upnote">컬럼: 업체명 / ID / PW / 사이트주소</div>'
+    +'</div>'
+    +'<div class="twrap"><table><thead><tr>'+ths+'</tr></thead><tbody>'+trs+'</tbody></table></div>'
+    +modalAddIdpw();
+}
+
+function renderLogin(){
+  return '<div class="login-wrap">'
+    +'<div class="login-box">'
+      +'<div class="ptag">ID/PW</div>'
+      +'<h2>접근 제한</h2>'
+      +'<p>비밀번호를 입력하세요</p>'
+      +'<div class="fg"><label>비밀번호</label>'
+        +'<input type="password" id="loginPw" placeholder="비밀번호" onkeydown="if(event.key===\'Enter\')checkLogin()"/>'
+      +'</div>'
+      +'<div class="login-err" id="loginErr" style="display:none">비밀번호가 올바르지 않습니다</div>'
+      +'<button class="btn primary" onclick="checkLogin()" style="width:100%;justify-content:center;padding:12px;">입력</button>'
+      +'<div><span class="login-pw-link" onclick="showPwChange()">비밀번호 변경</span></div>'
+    +'</div>'
+  +'</div>'
+  +modalPwChange();
+}
+
+function checkLogin(){
+  var pw=document.getElementById('loginPw').value;
+  if(pw===IDPW_PASS){
+    idpwUnlocked=true;
+    render();
+  } else {
+    var e=document.getElementById('loginErr');
+    if(e) e.style.display='block';
+  }
+}
+
+// ── MODAL: PW CHANGE ──
+function modalPwChange(){
+  return '<div id="pwChangeModal" class="overlay" style="display:none" onclick="if(event.target===this)closeModal(\'pwChangeModal\')">'
+    +'<div class="modal" style="max-width:360px">'
+      +'<div class="mhd"><h3>비밀번호 변경</h3><button class="mcls" onclick="closeModal(\'pwChangeModal\')">Close ✕</button></div>'
+      +'<div class="mbdy">'
+        +'<div class="fg"><label>현재 비밀번호</label><input type="password" id="pwCurrent" placeholder="현재 비밀번호"/></div>'
+        +'<div class="fg"><label>새 비밀번호</label><input type="password" id="pwNew" placeholder="새 비밀번호 (4자 이상)"/></div>'
+        +'<div class="fg"><label>새 비밀번호 확인</label><input type="password" id="pwNew2" placeholder="새 비밀번호 확인"/></div>'
+        +'<div id="pwErr" style="color:var(--accent);font-size:12px;letter-spacing:0.06em;margin-bottom:12px;display:none"></div>'
+        +'<div class="fa">'
+          +'<button class="btn" onclick="closeModal(\'pwChangeModal\')">취소</button>'
+          +'<button class="btn primary" onclick="changePw()">변경</button>'
+        +'</div>'
+      +'</div>'
+    +'</div>'
+  +'</div>';
+}
+function showPwChange(){
+  document.getElementById('pwChangeModal').style.display='flex';
+}
+function changePw(){
+  var cur=document.getElementById('pwCurrent').value;
+  var nw=document.getElementById('pwNew').value;
+  var nw2=document.getElementById('pwNew2').value;
+  var err=document.getElementById('pwErr');
+  err.style.display='none';
+  if(cur!==IDPW_PASS){err.textContent='현재 비밀번호가 올바르지 않습니다';err.style.display='block';return;}
+  if(!nw||nw.length<4){err.textContent='새 비밀번호는 4자 이상이어야 합니다';err.style.display='block';return;}
+  if(nw!==nw2){err.textContent='새 비밀번호가 일치하지 않습니다';err.style.display='block';return;}
+  IDPW_PASS=nw;
+  closeModal('pwChangeModal');
+  toast('비밀번호가 변경되었습니다');
+}
+
+// ── HIGHLIGHT ──
+function hlRow(id,col){
+  if(hlRow._prev){var p=document.getElementById('r-'+hlRow._prev);if(p)p.classList.remove('hl');}
+  hlRow._prev=id; hlCol=col;
+  var el=document.getElementById('r-'+id);if(el)el.classList.add('hl');
+}
+
+// ── PRODUCT DETAIL ──
+function openDetail(id){
+  var item=allBuja.find(function(i){return i.id===id;});
+  if(!item)return;
+  document.getElementById('detModal').style.display='flex';
+  document.getElementById('detTitle').textContent=item.name||'';
+  document.getElementById('detThumb').innerHTML=item.imageUrl
+    ?'<img src="'+escH(item.imageUrl)+'"/>'
+    :'<span class="noi">No Image</span>';
+  var flds=[
+    {l:'별칭',v:item.alias},{l:'판매처',v:item.seller},
+    {l:'판매처 정보',v:item.sellerInfo},{l:'가격',v:item.price},
+    {l:'주문단위',v:item.orderUnit},{l:'비고',v:item.note}
+  ];
+  var html='';
+  flds.forEach(function(f){
+    html+='<div class="dr"><div class="dlb">'+f.l+'</div><div class="dvl">'+escH(f.v||'—')+'</div></div>';
+  });
+  document.getElementById('detFields').innerHTML=html;
+  document.getElementById('detEditBtn').onclick=function(){closeModal('detModal');openEditProduct(id);};
+  document.getElementById('detDelBtn').onclick=function(){confirmDelProduct(id);};
+}
+function confirmDelProduct(id){
+  if(!confirm('이 제품을 삭제하시겠습니까?'))return;
+  deleteItem('buja',id).then(function(){
+    allBuja=allBuja.filter(function(i){return i.id!==id;});
+    closeModal('detModal');render();toast('삭제되었습니다');
+  });
+}
+
+// ── ADD/EDIT PRODUCT ──
+function openAddProduct(){
+  editProdId=null;uploadedImg=null;
+  document.getElementById('apModal').style.display='flex';
+  ['apName','apAlias','apSeller','apSellerInfo','apPrice','apOrderUnit','apNote'].forEach(function(id){
+    var el=document.getElementById(id);if(el)el.value='';
+  });
+  document.getElementById('apImg').innerHTML=imgZone();
+}
+function openEditProduct(id){
+  var item=allBuja.find(function(i){return i.id===id;});if(!item)return;
+  editProdId=id;uploadedImg=item.imageUrl||null;
+  document.getElementById('apModal').style.display='flex';
+  document.getElementById('apName').value=item.name||'';
+  document.getElementById('apAlias').value=item.alias||'';
+  document.getElementById('apSeller').value=item.seller||'';
+  document.getElementById('apSellerInfo').value=item.sellerInfo||'';
+  document.getElementById('apPrice').value=item.price||'';
+  document.getElementById('apOrderUnit').value=item.orderUnit||'';
+  document.getElementById('apNote').value=item.note||'';
+  document.getElementById('apImg').innerHTML=item.imageUrl
+    ?'<img src="'+escH(item.imageUrl)+'" class="iprv" onclick="document.getElementById(\'apFile\').click()"/>'
+    :imgZone();
+}
+function imgZone(){return '<div class="iuz" onclick="document.getElementById(\'apFile\').click()"><span class="uzi">📷</span><span>이미지 업로드</span></div>';}
+function handleImg(input){
+  var file=input.files[0];if(!file)return;
+  toast('이미지 업로드 중...');
+  var fd=new FormData();
+  fd.append('file',file);fd.append('upload_preset',CLD.preset);
+  fetch('https://api.cloudinary.com/v1_1/'+CLD.cloud+'/image/upload',{method:'POST',body:fd})
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(d.secure_url){
+        uploadedImg=d.secure_url;
+        document.getElementById('apImg').innerHTML='<img src="'+escH(d.secure_url)+'" class="iprv" onclick="document.getElementById(\'apFile\').click()"/>';
+        toast('업로드 완료');
+      } else {throw new Error();}
+    })
+    .catch(function(){
+      var url=URL.createObjectURL(file);
+      uploadedImg=url;
+      document.getElementById('apImg').innerHTML='<img src="'+escH(url)+'" class="iprv" onclick="document.getElementById(\'apFile\').click()"/>';
+      toast('이미지 로드됨 (Cloudinary 프리셋 설정 필요)');
+    });
+}
+function saveProduct(){
+  var data={
+    season:season,
+    name:document.getElementById('apName').value.trim(),
+    alias:document.getElementById('apAlias').value.trim(),
+    seller:document.getElementById('apSeller').value.trim(),
+    sellerInfo:document.getElementById('apSellerInfo').value.trim(),
+    price:document.getElementById('apPrice').value.trim(),
+    orderUnit:document.getElementById('apOrderUnit').value.trim(),
+    note:document.getElementById('apNote').value.trim(),
+    imageUrl:uploadedImg||''
+  };
+  if(!data.name){toast('제품명을 입력하세요');return;}
+  var p=editProdId
+    ?updateItem('buja',editProdId,data).then(function(){allBuja=allBuja.map(function(i){return i.id===editProdId?Object.assign({id:editProdId},data):i;});})
+    :addItem('buja',data).then(function(id){allBuja.push(Object.assign({id:id},data));});
+  p.then(function(){closeModal('apModal');render();toast(editProdId?'수정되었습니다':'추가되었습니다');});
+}
+
+// ── SEASON ──
+function openAddSeasonModal(){
+  document.getElementById('snModal').style.display='flex';
+  document.getElementById('snName').value='';
+}
+function saveNewSeason(){
+  var name=document.getElementById('snName').value.trim();
+  if(!name){toast('시즌명을 입력하세요');return;}
+  addItem('buja',{season:name,name:'',_placeholder:true}).then(function(id){
+    allBuja.push({id:id,season:name,name:'',_placeholder:true});
+    closeModal('snModal');render();toast('시즌이 추가되었습니다');
+  });
+}
+
+// ── ROW CRUD (생산/패키지) ──
+var addRowCol=null;
+function openAddRow(col){
+  addRowCol=col;editRowId=null;
+  document.getElementById('rowModal-'+col).style.display='flex';
+  ['name','contact','address','products','note'].forEach(function(k){
+    var el=document.getElementById('rw-'+k+'-'+col);if(el)el.value='';
+  });
+}
+function openEditRow(col){
+  if(!hlRow._prev||hlCol!==col){toast('편집할 행을 먼저 클릭하세요');return;}
+  var arr=col==='production'?allProd:allPkg;
+  var row=arr.find(function(r){return r.id===hlRow._prev;});
+  if(!row)return;
+  addRowCol=col;editRowId=hlRow._prev;
+  document.getElementById('rowModal-'+col).style.display='flex';
+  document.getElementById('rw-name-'+col).value=row.name||'';
+  document.getElementById('rw-contact-'+col).value=row.contact||'';
+  document.getElementById('rw-address-'+col).value=row.address||'';
+  document.getElementById('rw-products-'+col).value=row.products||'';
+  document.getElementById('rw-note-'+col).value=row.note||'';
+}
+function saveRow(col){
+  var data={
+    name:document.getElementById('rw-name-'+col).value.trim(),
+    contact:document.getElementById('rw-contact-'+col).value.trim(),
+    address:document.getElementById('rw-address-'+col).value.trim(),
+    products:document.getElementById('rw-products-'+col).value.trim(),
+    note:document.getElementById('rw-note-'+col).value.trim()
+  };
+  if(!data.name){toast('거래처명을 입력하세요');return;}
+  var dbCol=col==='production'?'production':'package';
+  var p=editRowId
+    ?updateItem(dbCol,editRowId,data).then(function(){
+        if(col==='production') allProd=allProd.map(function(r){return r.id===editRowId?Object.assign({id:editRowId},data):r;});
+        else allPkg=allPkg.map(function(r){return r.id===editRowId?Object.assign({id:editRowId},data):r;});
+      })
+    :addItem(dbCol,data).then(function(id){
+        if(col==='production') allProd.push(Object.assign({id:id},data));
+        else allPkg.push(Object.assign({id:id},data));
+      });
+  p.then(function(){editRowId=null;closeModal('rowModal-'+col);render();toast(editRowId?'수정됨':'추가됨');});
+}
+function deleteHl(col){
+  if(!hlRow._prev||hlCol!==col){toast('삭제할 행을 먼저 클릭하세요');return;}
+  if(!confirm('이 행을 삭제하시겠습니까?'))return;
+  var dbCol=col==='production'?'production':col==='package'?'package':'idpw';
+  deleteItem(dbCol,hlRow._prev).then(function(){
+    if(col==='production') allProd=allProd.filter(function(r){return r.id!==hlRow._prev;});
+    else if(col==='package') allPkg=allPkg.filter(function(r){return r.id!==hlRow._prev;});
+    else allIdpw=allIdpw.filter(function(r){return r.id!==hlRow._prev;});
+    hlRow._prev=null;render();toast('삭제되었습니다');
+  });
+}
+
+
+// ── BUJA PRODUCT SELECT/EDIT/DELETE ──
+function openEditProductBtn(){
+  if(!selectedProductId){toast('편집할 제품을 먼저 클릭하세요');return;}
+  openEditProduct(selectedProductId);
+}
+function deleteProductBtn(){
+  if(!selectedProductId){toast('삭제할 제품을 먼저 클릭하세요');return;}
+  confirmDelProduct(selectedProductId);
+}
+function selectProduct(id){
+  selectedProductId=id;
+  // highlight selected card
+  document.querySelectorAll('.product-card').forEach(function(c){c.classList.remove('selected-card');});
+  var el=document.getElementById('pc-'+id);
+  if(el)el.classList.add('selected-card');
+}
+
+// ── ID/PW CRUD ──
+var editIdpwId=null;
+var selectedProductId=null;
+function openAddIdpw(){
+  editIdpwId=null;
+  document.getElementById('idpwModal').style.display='flex';
+  ['ip-company','ip-userid','ip-password','ip-url'].forEach(function(id){
+    var el=document.getElementById(id);if(el)el.value='';
+  });
+}
+function openEditIdpw(){
+  if(!hlRow._prev||hlCol!=='idpw'){toast('편집할 행을 먼저 클릭하세요');return;}
+  var row=allIdpw.find(function(r){return r.id===hlRow._prev;});if(!row)return;
+  editIdpwId=hlRow._prev;
+  document.getElementById('idpwModal').style.display='flex';
+  document.getElementById('ip-company').value=row.company||'';
+  document.getElementById('ip-userid').value=row.userid||'';
+  document.getElementById('ip-password').value=row.password||'';
+  document.getElementById('ip-url').value=row.url||'';
+}
+function saveIdpw(){
+  var data={
+    company:document.getElementById('ip-company').value.trim(),
+    userid:document.getElementById('ip-userid').value.trim(),
+    password:document.getElementById('ip-password').value.trim(),
+    url:document.getElementById('ip-url').value.trim()
+  };
+  if(!data.company){toast('업체명을 입력하세요');return;}
+  var p=editIdpwId
+    ?updateItem('idpw',editIdpwId,data).then(function(){allIdpw=allIdpw.map(function(r){return r.id===editIdpwId?Object.assign({id:editIdpwId},data):r;});})
+    :addItem('idpw',data).then(function(id){allIdpw.push(Object.assign({id:id},data));});
+  p.then(function(){closeModal('idpwModal');render();toast(editIdpwId?'수정되었습니다':'추가되었습니다');});
+}
+
+// ── EXCEL UPLOAD ──
+function toggleUp(type){
+  var el=document.getElementById('up-'+type);
+  if(el)el.classList.toggle('open');
+}
+function handleExcel(input,type){
+  var file=input.files[0];if(!file)return;
+  toast('엑셀 처리 중...');
+  if(!window.XLSX){
+    var s=document.createElement('script');
+    s.src='https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js';
+    s.onload=function(){processExcel(file,type);};
+    document.head.appendChild(s);
+  } else {processExcel(file,type);}
+}
+function processExcel(file,type){
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
+    var promises=[];
+    var added=0;
+
+    if(type==='buja'||type==='buja-season'){
+      // 시트명 = 시즌명, 모든 시트 읽기
+      var existing={}; allBuja.forEach(function(i){existing[i.season]=true;});
+      wb.SheetNames.forEach(function(sheetName){
+        if(existing[sheetName])return; // 이미 있는 시즌 스킵
+        var rows=XLSX.utils.sheet_to_json(wb.Sheets[sheetName]);
+        rows.forEach(function(row){
+          if(!row['제품명'])return;
+          var item={season:sheetName,name:row['제품명']||'',alias:row['별칭']||'',
+            seller:row['판매처']||'',sellerInfo:row['판매처정보']||'',
+            price:String(row['가격']||''),orderUnit:row['주문단위']||'',note:row['비고']||'',imageUrl:''};
+          promises.push(addItem('buja',item).then(function(id){allBuja.push(Object.assign({id:id},item));added++;}));
+        });
+      });
+
+    } else if(type==='idpw'){
+      // 모든 시트 읽기 — 업체명 기준 중복 방지
+      var existN={}; allIdpw.forEach(function(r){existN[r.company]=true;});
+      wb.SheetNames.forEach(function(sheetName){
+        var rows=XLSX.utils.sheet_to_json(wb.Sheets[sheetName]);
+        rows.forEach(function(row){
+          var c=row['업체명']||'';if(!c||existN[c])return;
+          existN[c]=true; // 같은 업로드 내 중복도 방지
+          var item={company:c,userid:row['ID']||'',password:row['PW']||'',url:row['사이트주소']||''};
+          promises.push(addItem('idpw',item).then(function(id){allIdpw.push(Object.assign({id:id},item));added++;}));
+        });
+      });
+
+    } else {
+      // 생산 / 패키지 — 모든 시트 읽기, 거래처명 기준 중복 방지
+      var dbCol=type==='production'?'production':'package';
+      var arr=type==='production'?allProd:allPkg;
+      var existN2={}; arr.forEach(function(r){existN2[r.name]=true;});
+      wb.SheetNames.forEach(function(sheetName){
+        var rows=XLSX.utils.sheet_to_json(wb.Sheets[sheetName]);
+        rows.forEach(function(row){
+          var n=row['거래처명']||'';if(!n||existN2[n])return;
+          existN2[n]=true; // 같은 업로드 내 중복도 방지
+          var item={name:n,contact:row['연락처']||'',address:row['주소']||'',products:row['사용제품']||'',note:row['비고']||''};
+          promises.push(addItem(dbCol,item).then(function(id){
+            if(type==='production')allProd.push(Object.assign({id:id},item));
+            else allPkg.push(Object.assign({id:id},item));
+            added++;
+          }));
+        });
+      });
+    }
+
+    Promise.all(promises).then(function(){render();toast(added+'개 추가됨');});
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// ── SEARCH ──
+function doSearch(){
+  var q=document.getElementById('searchInput').value.trim().toLowerCase();
+  if(!q){closePopup();return;}
+  var results=[];
+  allBuja.filter(function(i){return !i._placeholder&&i.name;}).forEach(function(i){
+    if((i.name||'').toLowerCase().indexOf(q)>=0||(i.alias||'').toLowerCase().indexOf(q)>=0)
+      results.push({type:'부자재',name:i.name,sub:i.season+(i.alias?' · '+i.alias:''),pg:'buja-season',seas:i.season,id:i.id});
+  });
+  allProd.forEach(function(r){
+    if((r.name||'').toLowerCase().indexOf(q)>=0)
+      results.push({type:'생산',name:r.name,sub:r.address||'',pg:'prod',id:r.id});
+  });
+  allPkg.forEach(function(r){
+    if((r.name||'').toLowerCase().indexOf(q)>=0)
+      results.push({type:'패키지',name:r.name,sub:r.address||'',pg:'pkg',id:r.id});
+  });
+  if(results.length===1){navResult(results[0]);closePopup();return;}
+  var popup=document.getElementById('spopup');
+  popup.style.display='block';
+  window._sr=results;
+  if(!results.length){
+    popup.innerHTML='<div class="sphdr"><span>검색 결과</span><button onclick="closePopup()">✕</button></div>'
+      +'<div class="sri"><div class="srs">검색 결과가 없습니다</div></div>';
+    return;
+  }
+  var html='<div class="sphdr"><span>검색 결과 '+results.length+'건</span><button onclick="closePopup()">✕</button></div>';
+  results.forEach(function(r,i){
+    html+='<div class="sri" onclick="navResult('+i+')">'
+      +'<div class="srt">'+r.type+'</div>'
+      +'<div class="srn">'+escH(r.name)+'</div>'
+      +'<div class="srs">'+escH(r.sub)+'</div>'
+    +'</div>';
+  });
+  popup.innerHTML=html;
+}
+function navResult(r){
+  if(typeof r==='number') r=window._sr[r];
+  if(!r)return;
+  closePopup();
+  if(r.pg==='buja-season'){season=r.seas;goPage('buja-season');setTimeout(function(){if(r.id)openDetail(r.id);},100);}
+  else if(r.pg==='prod'){goPage('prod');setTimeout(function(){if(r.id)hlRow(r.id,'production');},100);}
+  else if(r.pg==='pkg'){goPage('pkg');setTimeout(function(){if(r.id)hlRow(r.id,'package');},100);}
+}
+function closePopup(){document.getElementById('spopup').style.display='none';}
+
+// ── MODALS HTML ──
+function modalDetail(){
+  return '<div id="detModal" class="overlay" style="display:none" onclick="if(event.target===this)closeModal(\'detModal\')">'
+    +'<div class="modal">'
+      +'<div class="mhd"><h3 id="detTitle"></h3><button class="mcls" onclick="closeModal(\'detModal\')">Close ✕</button></div>'
+      +'<div class="mbdy">'
+        +'<div class="mthumb" id="detThumb"></div>'
+        +'<div id="detFields"></div>'
+        +'<div class="fa">'
+          +'<button class="btn" id="detEditBtn">✏ 편집</button>'
+          +'<button class="btn danger" id="detDelBtn">삭제</button>'
+        +'</div>'
+      +'</div>'
+    +'</div>'
+  +'</div>';
+}
+function modalAddProduct(){
+  return '<div id="apModal" class="overlay" style="display:none" onclick="if(event.target===this)closeModal(\'apModal\')">'
+    +'<div class="modal">'
+      +'<div class="mhd"><h3>제품 추가 / 편집</h3><button class="mcls" onclick="closeModal(\'apModal\')">Close ✕</button></div>'
+      +'<div class="mbdy">'
+        +'<div id="apImg"></div>'
+        +'<input type="file" id="apFile" accept="image/*" style="display:none" onchange="handleImg(this)"/>'
+        +'<div class="fg"><label>제품명 *</label><input id="apName" placeholder="제품명"/></div>'
+        +'<div class="fg"><label>별칭</label><input id="apAlias" placeholder="별칭"/></div>'
+        +'<div class="fg"><label>판매처</label><input id="apSeller" placeholder="판매처"/></div>'
+        +'<div class="fg"><label>판매처 정보</label><input id="apSellerInfo" placeholder="URL, 연락처 등"/></div>'
+        +'<div class="fg"><label>가격</label><input id="apPrice" placeholder="예) 1,500원"/></div>'
+        +'<div class="fg"><label>주문단위</label><input id="apOrderUnit" placeholder="예) 100개"/></div>'
+        +'<div class="fg"><label>비고</label><textarea id="apNote" rows="3" placeholder="비고"></textarea></div>'
+        +'<div class="fa"><button class="btn" onclick="closeModal(\'apModal\')">취소</button><button class="btn primary" onclick="saveProduct()">저장</button></div>'
+      +'</div>'
+    +'</div>'
+  +'</div>';
+}
+function modalAddSeason(){
+  return '<div id="snModal" class="overlay" style="display:none" onclick="if(event.target===this)closeModal(\'snModal\')">'
+    +'<div class="modal" style="max-width:360px">'
+      +'<div class="mhd"><h3>시즌 추가</h3><button class="mcls" onclick="closeModal(\'snModal\')">Close ✕</button></div>'
+      +'<div class="mbdy">'
+        +'<div class="fg"><label>시즌명</label><input id="snName" placeholder="예) 2025SS"/></div>'
+        +'<div class="fa"><button class="btn" onclick="closeModal(\'snModal\')">취소</button><button class="btn primary" onclick="saveNewSeason()">추가</button></div>'
+      +'</div>'
+    +'</div>'
+  +'</div>';
+}
+function modalAddRow(col){
+  var label=col==='production'?'생산':'패키지';
+  return '<div id="rowModal-'+col+'" class="overlay" style="display:none" onclick="if(event.target===this)closeModal(\'rowModal-'+col+'\')">'
+    +'<div class="modal" style="max-width:420px">'
+      +'<div class="mhd"><h3>'+label+' 거래처</h3><button class="mcls" onclick="closeModal(\'rowModal-'+col+'\')">Close ✕</button></div>'
+      +'<div class="mbdy">'
+        +'<div class="fg"><label>거래처명 *</label><input id="rw-name-'+col+'" placeholder="거래처명"/></div>'
+        +'<div class="fg"><label>연락처</label><input id="rw-contact-'+col+'" placeholder="연락처"/></div>'
+        +'<div class="fg"><label>주소</label><input id="rw-address-'+col+'" placeholder="주소"/></div>'
+        +'<div class="fg"><label>사용제품</label><input id="rw-products-'+col+'" placeholder="사용제품"/></div>'
+        +'<div class="fg"><label>비고</label><textarea id="rw-note-'+col+'" rows="3" placeholder="비고"></textarea></div>'
+        +'<div class="fa"><button class="btn" onclick="closeModal(\'rowModal-'+col+'\')">취소</button><button class="btn primary" onclick="saveRow(\''+col+'\')">저장</button></div>'
+      +'</div>'
+    +'</div>'
+  +'</div>';
+}
+function modalAddIdpw(){
+  return '<div id="idpwModal" class="overlay" style="display:none" onclick="if(event.target===this)closeModal(\'idpwModal\')">'
+    +'<div class="modal" style="max-width:420px">'
+      +'<div class="mhd"><h3>ID/PW 추가 / 편집</h3><button class="mcls" onclick="closeModal(\'idpwModal\')">Close ✕</button></div>'
+      +'<div class="mbdy">'
+        +'<div class="fg"><label>업체명 *</label><input id="ip-company" placeholder="업체명"/></div>'
+        +'<div class="fg"><label>ID</label><input id="ip-userid" placeholder="아이디"/></div>'
+        +'<div class="fg"><label>PW</label><input id="ip-password" type="password" placeholder="비밀번호"/></div>'
+        +'<div class="fg"><label>사이트 주소</label><input id="ip-url" placeholder="https://..."/></div>'
+        +'<div class="fa"><button class="btn" onclick="closeModal(\'idpwModal\')">취소</button><button class="btn primary" onclick="saveIdpw()">저장</button></div>'
+      +'</div>'
+    +'</div>'
+  +'</div>';
+}
+
+// ── UTILS ──
+function closeModal(id){var el=document.getElementById(id);if(el)el.style.display='none';}
+function escH(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function toast(msg,dur){
+  dur=dur||2500;
+  var t=document.getElementById('toast');
+  t.textContent=msg;t.style.display='block';
+  clearTimeout(t._t);t._t=setTimeout(function(){t.style.display='none';},dur);
+}
+document.addEventListener('click',function(e){
+  var popup=document.getElementById('spopup');
+  var bar=document.getElementById('searchbar');
+  if(popup.style.display!=='none'&&!popup.contains(e.target)&&!bar.contains(e.target))closePopup();
+  var mm=document.getElementById('mobileMenu');
+  var mt=document.getElementById('menuToggle');
+  if(mm&&mt&&!mm.contains(e.target)&&!mt.contains(e.target))mm.classList.remove('open');
+});
+</script>
+
+</body>
+</html>
