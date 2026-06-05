@@ -201,6 +201,7 @@ tbody td a:hover{text-decoration:underline;}
   thead th{padding:10px 12px;}
 }
 </style>
+<script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
 <nav id="topnav">
@@ -765,8 +766,16 @@ function handleExcel(input,type){
   toast('엑셀 처리 중...');
   if(!window.XLSX){
     var s=document.createElement('script');
-    s.src='https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js';
+    s.src='https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js';
     s.onload=function(){processExcel(file,type);};
+    s.onerror=function(){
+      // fallback to jsdelivr
+      var s2=document.createElement('script');
+      s2.src='https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+      s2.onload=function(){processExcel(file,type);};
+      s2.onerror=function(){toast('라이브러리 로드 실패. 인터넷 연결을 확인해주세요.');};
+      document.head.appendChild(s2);
+    };
     document.head.appendChild(s);
   } else {processExcel(file,type);}
 }
