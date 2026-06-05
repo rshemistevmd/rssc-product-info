@@ -111,6 +111,23 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .pbar .pnm{font-family:var(--cond);font-size:14px;font-weight:600;letter-spacing:0.03em;text-transform:uppercase;line-height:1.2;}
 .pbar .pals{font-size:11px;color:var(--text3);margin-top:3px;font-family:var(--cond);letter-spacing:0.04em;}
 
+
+/* CATEGORY CELL (rowspan) */
+.cat-cell{
+  background:var(--bg);
+  font-family:var(--cond);
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:0.1em;
+  text-transform:uppercase;
+  color:var(--accent);
+  text-align:center;
+  vertical-align:middle;
+  border-right:2px solid var(--accent);
+  white-space:nowrap;
+  padding:13px 14px;
+  min-width:72px;
+}
 /* TABLE */
 .twrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
 table{width:100%;border-collapse:collapse;font-size:13px;min-width:480px;}
@@ -420,21 +437,48 @@ function renderBujaSeason(){
 }
 
 // ── TABLE ──
+// ── TABLE ──
 function renderTable(colName){
   var data=colName==='production'?allProd:allPkg;
   var label=colName==='production'?'🏭 생산':'📦 패키지';
   var tag=colName==='production'?'생산':'패키지';
-  var cols=['거래처명','연락처','주소','사용제품','비고'];
-  var keys=['name','contact','address','products','note'];
+  var isProd=colName==='production';
+  var cols=isProd?['종류','거래처명','연락처','주소','사용제품','비고']:['거래처명','연락처','주소','사용제품','비고'];
+  var colCount=cols.length;
   var ths=''; cols.forEach(function(c){ths+='<th>'+c+'</th>';});
   var trs='';
   if(data.length){
-    data.forEach(function(row){
-      var tds=''; keys.forEach(function(k){tds+='<td>'+escH(row[k]||'')+'</td>';});
-      trs+='<tr id="r-'+row.id+'" onclick="hlRow(\''+row.id+'\',\''+colName+'\')">'+tds+'</tr>';
-    });
+    if(isProd){
+      // 종류별 그룹핑 → rowspan
+      var groups={};
+      var groupOrder=[];
+      data.forEach(function(row){
+        var cat=row.category||'기타';
+        if(!groups[cat]){groups[cat]=[];groupOrder.push(cat);}
+        groups[cat].push(row);
+      });
+      groupOrder.forEach(function(cat){
+        var rows=groups[cat];
+        rows.forEach(function(row,ri){
+          var tds='';
+          if(ri===0){
+            tds+='<td class="cat-cell" rowspan="'+rows.length+'">'+escH(cat)+'</td>';
+          }
+          ['name','contact','address','products','note'].forEach(function(k){
+            tds+='<td>'+escH(row[k]||'')+'</td>';
+          });
+          trs+='<tr id="r-'+row.id+'" onclick="hlRow(\''+row.id+'\',\''+colName+'\')">'+tds+'</tr>';
+        });
+      });
+    } else {
+      data.forEach(function(row){
+        var tds='';
+        ['name','contact','address','products','note'].forEach(function(k){tds+='<td>'+escH(row[k]||'')+'</td>';});
+        trs+='<tr id="r-'+row.id+'" onclick="hlRow(\''+row.id+'\',\''+colName+'\')">'+tds+'</tr>';
+      });
+    }
   } else {
-    trs='<tr><td colspan="5" class="estate">등록된 거래처가 없습니다</td></tr>';
+    trs='<tr><td colspan="'+colCount+'" class="estate">등록된 거래처가 없습니다</td></tr>';
   }
   return '<div class="ph">'
       +'<div class="ph-l"><div class="ptag">'+tag+'</div><div class="ptitle">'+label+' 거래처</div></div>'
@@ -446,8 +490,8 @@ function renderTable(colName){
       +'</div></div>'
     +'<div class="upsec" id="up-'+colName+'">'
       +'<h4>Excel Upload — 새 거래처만 추가됩니다</h4>'
-      +'<div class="uprow"><input type="file" accept=".xlsx,.xls" onchange="handleExcel(this,\''+colName+'\')"/></div>'
-      +'<div class="upnote">컬럼: 거래처명 / 연락처 / 주소 / 사용제품 / 비고</div>'
+      +'<div class="uprow"><input type="file" accept=".xlsx,.xls" onchange="handleExcel(this,\''+colName+'\',input)"/></div>'
+      +'<div class="upnote">'+(isProd?'컬럼: 종류 / 거래처명 / 연락처 / 주소 / 사용제품 / 비고':'컬럼: 거래처명 / 연락처 / 주소 / 사용제품 / 비고')+'</div>'
     +'</div>'
     +'<div class="twrap"><table><thead><tr>'+ths+'</tr></thead><tbody>'+trs+'</tbody></table></div>'
     +modalAddRow(colName);
@@ -682,7 +726,7 @@ var addRowCol=null;
 function openAddRow(col){
   addRowCol=col;editRowId=null;
   document.getElementById('rowModal-'+col).style.display='flex';
-  ['name','contact','address','products','note'].forEach(function(k){
+  ['category','name','contact','address','products','note'].forEach(function(k){
     var el=document.getElementById('rw-'+k+'-'+col);if(el)el.value='';
   });
 }
@@ -693,6 +737,8 @@ function openEditRow(col){
   if(!row)return;
   addRowCol=col;editRowId=_hlId;
   document.getElementById('rowModal-'+col).style.display='flex';
+  var catEl=document.getElementById('rw-category-'+col);
+  if(catEl)catEl.value=row.category||'';
   document.getElementById('rw-name-'+col).value=row.name||'';
   document.getElementById('rw-contact-'+col).value=row.contact||'';
   document.getElementById('rw-address-'+col).value=row.address||'';
@@ -700,7 +746,9 @@ function openEditRow(col){
   document.getElementById('rw-note-'+col).value=row.note||'';
 }
 function saveRow(col){
+  var catEl=document.getElementById('rw-category-'+col);
   var data={
+    category:catEl?catEl.value.trim():'',
     name:document.getElementById('rw-name-'+col).value.trim(),
     contact:document.getElementById('rw-contact-'+col).value.trim(),
     address:document.getElementById('rw-address-'+col).value.trim(),
@@ -884,7 +932,7 @@ function processExcel(file,type,input){
           if(!n||n.startsWith('['))return;
           if(existN2[n])return;
           existN2[n]=true;
-          var item={name:n,contact:row['연락처']||'',address:row['주소']||'',
+          var item={category:row['종류']||'',name:n,contact:row['연락처']||'',address:row['주소']||'',
             products:row['사용제품']||'',note:row['비고']||''};
           promises.push(addItem(dbCol,item).then(function(id){
             if(type==='production')allProd.push(Object.assign({id:id},item));
@@ -1002,10 +1050,14 @@ function modalAddSeason(){
 }
 function modalAddRow(col){
   var label=col==='production'?'생산':'패키지';
+  var catField=col==='production'
+    ?'<div class="fg"><label>종류</label><input id="rw-category-'+col+'" placeholder="예) 후가공, 원단, 부자재"/></div>'
+    :'';
   return '<div id="rowModal-'+col+'" class="overlay" style="display:none" onclick="if(event.target===this)closeModal(\'rowModal-'+col+'\')">'
     +'<div class="modal" style="max-width:420px">'
       +'<div class="mhd"><h3>'+label+' 거래처</h3><button class="mcls" onclick="closeModal(\'rowModal-'+col+'\')">Close ✕</button></div>'
       +'<div class="mbdy">'
+        +catField
         +'<div class="fg"><label>거래처명 *</label><input id="rw-name-'+col+'" placeholder="거래처명"/></div>'
         +'<div class="fg"><label>연락처</label><input id="rw-contact-'+col+'" placeholder="연락처"/></div>'
         +'<div class="fg"><label>주소</label><input id="rw-address-'+col+'" placeholder="주소"/></div>'
