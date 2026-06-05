@@ -422,12 +422,25 @@ function renderTable(colName){
     });
   }
 
-  var ths='<th class="cb-col"><input type="checkbox" id="ckAll-'+colName+'" onchange="togAllRows(this,\''+colName+'\')" title="전체선택"/></th>';
-  cols.forEach(function(c,i){
-    var sc=sortState.col===i+1;
-    var cls='sortable'+(sc?(sortState.dir===1?' sort-asc':' sort-desc'):'');
-    ths+='<th class="'+cls+'" onclick="sortTable(\''+colName+'\','+( i+1)+')">'+c+'</th>';
-  });
+  var ths;
+  if(isProd){
+    var sc0=sortState.col===1;
+    var cls0='sortable'+(sc0?(sortState.dir===1?' sort-asc':' sort-desc'):'');
+    ths='<th class="'+cls0+'" onclick="sortTable(\''+colName+'\',1)">'+cols[0]+'</th>';
+    ths+='<th class="cb-col"><input type="checkbox" id="ckAll-'+colName+'" onchange="togAllRows(this,\''+colName+'\')" title="전체선택"/></th>';
+    cols.slice(1).forEach(function(c,i){
+      var sc=sortState.col===i+2;
+      var cls='sortable'+(sc?(sortState.dir===1?' sort-asc':' sort-desc'):'');
+      ths+='<th class="'+cls+'" onclick="sortTable(\''+colName+'\','+(i+2)+')">'+c+'</th>';
+    });
+  } else {
+    ths='<th class="cb-col"><input type="checkbox" id="ckAll-'+colName+'" onchange="togAllRows(this,\''+colName+'\')" title="전체선택"/></th>';
+    cols.forEach(function(c,i){
+      var sc=sortState.col===i+1;
+      var cls='sortable'+(sc?(sortState.dir===1?' sort-asc':' sort-desc'):'');
+      ths+='<th class="'+cls+'" onclick="sortTable(\''+colName+'\','+(i+1)+')">'+c+'</th>';
+    });
+  }
 
   var trs='';
   if(sorted.length){
@@ -437,8 +450,9 @@ function renderTable(colName){
       gorder.forEach(function(cat){
         groups[cat].forEach(function(row,ri){
           var isck=checkedRows[colName]&&checkedRows[colName][row.id];
-          var tds='<td class="cb-col"><input type="checkbox" class="rowcb" data-id="'+row.id+'" data-col="'+colName+'" '+(isck?'checked':'')+' onchange="togRowCk(this)" onclick="event.stopPropagation()"/></td>';
-          if(ri===0) tds+='<td class="cat-cell" rowspan="'+groups[cat].length+'">'+escH(cat)+'</td>';
+          var tds='';
+          if(ri===0) tds='<td class="cat-cell" rowspan="'+groups[cat].length+'">'+escH(cat)+'</td>';
+          tds+='<td class="cb-col"><input type="checkbox" class="rowcb" data-id="'+row.id+'" data-col="'+colName+'" '+(isck?'checked':'')+' onchange="togRowCk(this)" onclick="event.stopPropagation()"/></td>';
           flds.forEach(function(k){tds+='<td>'+escH(row[k]||'')+'</td>';});
           trs+='<tr id="r-'+row.id+'"'+(isck?' class="ck"':'')+' onclick="openRowDetail(\''+row.id+'\',\''+colName+'\')">'+tds+'</tr>';
         });
